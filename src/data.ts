@@ -1,4 +1,4 @@
-export const buttonText = [
+export const DATA_CALCULATOR = [
   'C',
   '%',
   '+',

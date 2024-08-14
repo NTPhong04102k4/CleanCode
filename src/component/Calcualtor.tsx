@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import React, {useState} from 'react';
 import {
   FlatList,
@@ -9,7 +8,8 @@ import {
   TextInput,
   StyleSheet,
 } from 'react-native';
-import {buttonText} from '../data';
+import {DATA_CALCULATOR} from '../data';
+import {isFloat, hasDot, isOperator, isNumber} from './calculatorUtils';
 
 enum CALCULATOR {
   SUM = '+',
@@ -69,28 +69,15 @@ export function Calculator() {
   };
 
   const handleClick = (text: string) => {
-    if (
-      [
-        CALCULATOR.SUM,
-        CALCULATOR.SUBTRACTION,
-        CALCULATOR.MOD,
-        CALCULATOR.DIVISION,
-        CALCULATOR.MULTIPLICATION,
-      ].includes(text as CALCULATOR)
-    ) {
-      if (operatorRight && operatorLeft && operator) {
+    if (isOperator(text, CALCULATOR)) {
+      if (operator && operatorLeft && operatorRight) {
         calculator();
       }
-
-      if (operatorLeft) {
+      if (operatorLeft && !operator) {
         setOperator(text);
       } else if (operatorRight) {
         setOperatorLeft(operatorRight);
         setOperator(text);
-        setOperatorRight('');
-      } else {
-        setOperator(null);
-        setOperatorLeft('');
         setOperatorRight('');
       }
     } else {
@@ -104,7 +91,8 @@ export function Calculator() {
         case CALCULATOR.DEL:
           if (operatorRight) {
             setOperatorRight(operatorRight.slice(0, -1));
-          } else if (operatorLeft) {
+          }
+          if (operatorLeft && !operatorRight) {
             setOperatorLeft(operatorLeft.slice(0, -1));
           } else {
             setOperator(null);
@@ -112,6 +100,9 @@ export function Calculator() {
           break;
 
         case CALCULATOR.RESULT:
+          if (isNumber(operatorLeft) || isNumber(operatorRight)) {
+            return;
+          }
           if (operatorRight && operatorLeft && operator) {
             calculator();
           }
@@ -119,26 +110,16 @@ export function Calculator() {
 
         default:
           if (operator) {
-            setOperatorRight(prev => {
-              if (prev.includes('.') || prev.includes(',')) {
-                if (text === '.' || text === ',') {
-                  return prev;
-                }
-              }
-              return prev + text;
-            });
+            setOperatorRight(prev =>
+              isFloat(prev) && hasDot(text) ? prev : prev + text,
+            );
           } else {
+            setOperatorLeft(prev =>
+              isFloat(prev) && hasDot(text) ? prev : prev + text,
+            );
             if (operatorLeft && operatorRight) {
               setOperatorRight('');
             }
-            setOperatorLeft(prev => {
-              if (prev.includes('.') || prev.includes(',')) {
-                if (text === '.' || text === ',') {
-                  return prev; // Prevent multiple decimal points
-                }
-              }
-              return prev + text;
-            });
           }
       }
     }
@@ -169,14 +150,13 @@ export function Calculator() {
         style={styles.list}
         contentContainerStyle={styles.listContentContainer}
         columnWrapperStyle={styles.columnWrapper}
-        data={buttonText}
+        data={DATA_CALCULATOR}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderItem}
       />
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
